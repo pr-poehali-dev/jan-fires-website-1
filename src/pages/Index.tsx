@@ -8,10 +8,10 @@ const Index = () => {
   const [currentTrack, setCurrentTrack] = useState(0);
 
   const tracks = [
-    { id: 1, title: 'Midnight Echo', duration: '3:45', album: 'Shadows & Light' },
-    { id: 2, title: 'Golden Hour', duration: '4:12', album: 'Shadows & Light' },
-    { id: 3, title: 'Lost in Translation', duration: '3:28', album: 'Echoes' },
-    { id: 4, title: 'Velvet Dreams', duration: '5:01', album: 'Echoes' },
+    { id: 1, title: 'Полночное эхо', duration: '3:45', album: 'Тени и свет' },
+    { id: 2, title: 'Золотой час', duration: '4:12', album: 'Тени и свет' },
+    { id: 3, title: 'Потерянный в переводе', duration: '3:28', album: 'Отголоски' },
+    { id: 4, title: 'Бархатные мечты', duration: '5:01', album: 'Отголоски' },
   ];
 
   const galleryImages = [
@@ -41,7 +41,7 @@ const Index = () => {
                     activeSection === section ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {section === 'bio' ? 'Biography' : section}
+                  {section === 'home' ? 'Главная' : section === 'bio' ? 'Биография' : section === 'music' ? 'Музыка' : 'Галерея'}
                 </button>
               ))}
             </div>
@@ -58,21 +58,21 @@ const Index = () => {
         />
         <div className="container mx-auto px-6 z-20 text-center animate-fade-in">
           <h2 className="text-7xl md:text-9xl font-bold mb-6 text-primary">Jan Fires</h2>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 tracking-wide">Voice of the Night</p>
+          <p className="text-xl md:text-2xl text-muted-foreground mb-8 tracking-wide">Голос ночи</p>
           <div className="flex gap-4 justify-center">
             <Button
               onClick={() => scrollToSection('music')}
               className="bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-lg"
             >
               <Icon name="Play" className="mr-2" size={20} />
-              Listen Now
+              Слушать
             </Button>
             <Button
               onClick={() => scrollToSection('bio')}
               variant="outline"
               className="border-primary text-primary hover:bg-primary/10 px-8 py-6 text-lg"
             >
-              Discover More
+              Узнать больше
             </Button>
           </div>
         </div>
@@ -80,22 +80,22 @@ const Index = () => {
 
       <section id="bio" className="py-32 bg-secondary/30">
         <div className="container mx-auto px-6 max-w-4xl">
-          <h2 className="text-6xl font-bold mb-12 text-center text-primary animate-slide-up">Biography</h2>
+          <h2 className="text-6xl font-bold mb-12 text-center text-primary animate-slide-up">Биография</h2>
           <div className="space-y-6 text-lg leading-relaxed text-muted-foreground">
             <p className="animate-fade-in">
-              Jan Fires emerged from the underground music scene with a voice that captures the essence of
-              contemporary soul intertwined with classical elegance. His unique sound has captivated audiences
-              across continents, creating an intimate connection through every note.
+              Jan Fires появился на андеграундной музыкальной сцене с голосом, который воплощает в себе
+              современную душу в сочетании с классической элегантностью. Его уникальное звучание покорило
+              аудитории по всему миру, создавая глубокую связь через каждую ноту.
             </p>
             <p className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              Born into a family of musicians, Jan discovered his passion for music at an early age. His journey
-              began in smoky jazz clubs and evolved into sold-out concert halls, where his performances blend raw
-              emotion with technical precision.
+              Родившийся в семье музыкантов, Jan открыл свою страсть к музыке в раннем возрасте. Его путь
+              начался в задымленных джаз-клубах и вырос до концертных залов с аншлагами, где его выступления
+              сочетают необработанную эмоцию с технической точностью.
             </p>
             <p className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
-              With multiple albums and countless performances, Jan Fires continues to push the boundaries of
-              modern music, creating soundscapes that resonate with the human experience. His work is a testament
-              to the power of vulnerability and artistic expression.
+              С множеством альбомов и бесчисленными выступлениями, Jan Fires продолжает раздвигать границы
+              современной музыки, создавая звуковые пейзажи, которые резонируют с человеческим опытом. Его
+              работа — свидетельство силы уязвимости и художественного самовыражения.
             </p>
           </div>
         </div>
@@ -103,7 +103,7 @@ const Index = () => {
 
       <section id="music" className="py-32">
         <div className="container mx-auto px-6 max-w-5xl">
-          <h2 className="text-6xl font-bold mb-12 text-center text-primary">Music</h2>
+          <h2 className="text-6xl font-bold mb-12 text-center text-primary">Музыка</h2>
           <Card className="bg-card border-border">
             <CardContent className="p-8">
               <div className="space-y-2 mb-8">
@@ -167,7 +167,7 @@ const Index = () => {
 
       <section id="gallery" className="py-32 bg-secondary/30">
         <div className="container mx-auto px-6">
-          <h2 className="text-6xl font-bold mb-12 text-center text-primary">Gallery</h2>
+          <h2 className="text-6xl font-bold mb-12 text-center text-primary">Галерея</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {galleryImages.map((image, index) => (
               <div
