@@ -33,7 +33,7 @@ const Index = () => {
     if (savedAuth === AUTHOR_PASSWORD) {
       setIsAuthorized(true);
     }
-  }, []);
+  }, [AUTHOR_PASSWORD]);
 
   const handleLogin = () => {
     if (password === AUTHOR_PASSWORD) {
@@ -127,10 +127,12 @@ const Index = () => {
     if (audioRef.current && tracks[currentTrack]?.audioUrl) {
       audioRef.current.load();
       if (isPlaying) {
-        audioRef.current.play();
+        audioRef.current.play().catch(() => {
+          setIsPlaying(false);
+        });
       }
     }
-  }, [currentTrack]);
+  }, [currentTrack, tracks, isPlaying]);
 
   const togglePlayPause = () => {
     if (!audioRef.current) return;
@@ -144,10 +146,18 @@ const Index = () => {
 
     if (isPlaying) {
       audioRef.current.pause();
+      setIsPlaying(false);
     } else {
-      audioRef.current.play();
+      audioRef.current.play().catch((error) => {
+        console.error('Play error:', error);
+        toast({
+          title: "Ошибка воспроизведения",
+          description: "Не удалось воспроизвести аудио",
+          variant: "destructive",
+        });
+      });
+      setIsPlaying(true);
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleTrackSelect = (index: number) => {
