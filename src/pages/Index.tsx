@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { toast } from '@/components/ui/use-toast';
 
@@ -15,6 +16,13 @@ const Index = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [password, setPassword] = useState('');
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [bioText, setBioText] = useState([
+    'Jan Fires появился на андеграундной музыкальной сцене с голосом, который воплощает в себе современную душу в сочетании с классической элегантностью. Его уникальное звучание покорило аудитории по всему миру, создавая глубокую связь через каждую ноту.',
+    'Родившийся в семье музыкантов, Jan открыл свою страсть к музыке в раннем возрасте. Его путь начался в задымленных джаз-клубах и вырос до концертных залов с аншлагами, где его выступления сочетают необработанную эмоцию с технической точностью.',
+    'С множеством альбомов и бесчисленными выступлениями, Jan Fires продолжает раздвигать границы современной музыки, создавая звуковые пейзажи, которые резонируют с человеческим опытом. Его работа — свидетельство силы уязвимости и художественного самовыражения.'
+  ]);
+  const [tempBioText, setTempBioText] = useState<string[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,6 +61,35 @@ const Index = () => {
       title: "Выход",
       description: "Режим редактирования отключён",
     });
+  };
+
+  const handleEditBio = () => {
+    if (!isAuthorized) {
+      setShowAuthDialog(true);
+      return;
+    }
+    setTempBioText([...bioText]);
+    setIsEditingBio(true);
+  };
+
+  const handleSaveBio = () => {
+    setBioText([...tempBioText]);
+    setIsEditingBio(false);
+    toast({
+      title: "Успешно",
+      description: "Биография обновлена",
+    });
+  };
+
+  const handleCancelEditBio = () => {
+    setIsEditingBio(false);
+    setTempBioText([]);
+  };
+
+  const updateBioParagraph = (index: number, value: string) => {
+    const updated = [...tempBioText];
+    updated[index] = value;
+    setTempBioText(updated);
   };
 
   const [tracks, setTracks] = useState([
@@ -286,24 +323,63 @@ const Index = () => {
 
       <section id="bio" className="py-32 bg-secondary/30">
         <div className="container mx-auto px-6 max-w-4xl">
-          <h2 className="text-6xl font-bold mb-12 text-center text-primary animate-slide-up">Биография</h2>
-          <div className="space-y-6 text-lg leading-relaxed text-muted-foreground">
-            <p className="animate-fade-in">
-              Jan Fires появился на андеграундной музыкальной сцене с голосом, который воплощает в себе
-              современную душу в сочетании с классической элегантностью. Его уникальное звучание покорило
-              аудитории по всему миру, создавая глубокую связь через каждую ноту.
-            </p>
-            <p className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              Родившийся в семье музыкантов, Jan открыл свою страсть к музыке в раннем возрасте. Его путь
-              начался в задымленных джаз-клубах и вырос до концертных залов с аншлагами, где его выступления
-              сочетают необработанную эмоцию с технической точностью.
-            </p>
-            <p className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
-              С множеством альбомов и бесчисленными выступлениями, Jan Fires продолжает раздвигать границы
-              современной музыки, создавая звуковые пейзажи, которые резонируют с человеческим опытом. Его
-              работа — свидетельство силы уязвимости и художественного самовыражения.
-            </p>
+          <div className="flex items-center justify-between mb-12">
+            <h2 className="text-6xl font-bold text-primary animate-slide-up">Биография</h2>
+            {isAuthorized && !isEditingBio && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditBio}
+                className="border-primary text-primary hover:bg-primary/10"
+              >
+                <Icon name="Edit" className="mr-2" size={16} />
+                Редактировать
+              </Button>
+            )}
+            {isEditingBio && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelEditBio}
+                  className="border-muted-foreground text-muted-foreground"
+                >
+                  <Icon name="X" className="mr-2" size={16} />
+                  Отмена
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveBio}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Icon name="Check" className="mr-2" size={16} />
+                  Сохранить
+                </Button>
+              </div>
+            )}
           </div>
+          
+          {!isEditingBio ? (
+            <div className="space-y-6 text-lg leading-relaxed text-muted-foreground">
+              {bioText.map((paragraph, index) => (
+                <p key={index} className="animate-fade-in" style={{ animationDelay: `${index * 0.2}s` }}>
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {tempBioText.map((paragraph, index) => (
+                <Textarea
+                  key={index}
+                  value={paragraph}
+                  onChange={(e) => updateBioParagraph(index, e.target.value)}
+                  className="min-h-[120px] bg-background border-border text-foreground text-lg leading-relaxed"
+                  placeholder={`Параграф ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
