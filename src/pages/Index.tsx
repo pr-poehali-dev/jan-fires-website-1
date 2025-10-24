@@ -163,6 +163,37 @@ const Index = () => {
     });
   };
 
+  const handleDeleteTrack = (index: number) => {
+    if (!isAuthorized) {
+      setShowAuthDialog(true);
+      return;
+    }
+
+    if (tracks.length <= 1) {
+      toast({
+        title: "Ошибка",
+        description: "Нельзя удалить последний трек",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedTracks = tracks.filter((_, i) => i !== index);
+    setTracks(updatedTracks);
+
+    if (currentTrack >= updatedTracks.length) {
+      setCurrentTrack(updatedTracks.length - 1);
+    } else if (currentTrack === index) {
+      setIsPlaying(false);
+      setCurrentTrack(0);
+    }
+
+    toast({
+      title: "Успешно",
+      description: "Трек удалён",
+    });
+  };
+
   const handleGalleryImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     if (!isAuthorized) {
       setShowAuthDialog(true);
@@ -576,22 +607,35 @@ const Index = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {isAuthorized && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isEditingTrack && editingTrackIndex === index) {
-                              setIsEditingTrack(false);
-                              setEditingTrackIndex(null);
-                            } else {
-                              handleEditTrack(index);
-                            }
-                          }}
-                          className="hover:text-primary"
-                        >
-                          <Icon name={isEditingTrack && editingTrackIndex === index ? "Check" : "Edit"} size={16} />
-                        </Button>
+                        <>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isEditingTrack && editingTrackIndex === index) {
+                                setIsEditingTrack(false);
+                                setEditingTrackIndex(null);
+                              } else {
+                                handleEditTrack(index);
+                              }
+                            }}
+                            className="hover:text-primary"
+                          >
+                            <Icon name={isEditingTrack && editingTrackIndex === index ? "Check" : "Edit"} size={16} />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteTrack(index);
+                            }}
+                            className="hover:text-destructive"
+                          >
+                            <Icon name="Trash2" size={16} />
+                          </Button>
+                        </>
                       )}
                       <span className="text-sm text-muted-foreground">{track.duration}</span>
                     </div>
