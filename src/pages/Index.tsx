@@ -142,6 +142,27 @@ const Index = () => {
     setYandexMusicUrl('');
   };
 
+  const handleAddNewTrack = () => {
+    if (!isAuthorized) {
+      setShowAuthDialog(true);
+      return;
+    }
+
+    const newTrack = {
+      id: tracks.length + 1,
+      title: 'Новый трек',
+      duration: '0:00',
+      album: 'Без альбома',
+      audioUrl: ''
+    };
+
+    setTracks([...tracks, newTrack]);
+    toast({
+      title: "Успешно",
+      description: "Новый трек добавлен",
+    });
+  };
+
   const handleGalleryImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     if (!isAuthorized) {
       setShowAuthDialog(true);
@@ -577,6 +598,19 @@ const Index = () => {
                   </div>
                 ))}
               </div>
+
+              {isAuthorized && (
+                <div className="mb-6">
+                  <Button
+                    onClick={handleAddNewTrack}
+                    variant="outline"
+                    className="w-full border-dashed border-2 border-primary/50 text-primary hover:bg-primary/10"
+                  >
+                    <Icon name="Plus" className="mr-2" size={18} />
+                    Добавить новый трек
+                  </Button>
+                </div>
+              )}
 
               <div className="border-t border-border pt-6">
                 <div className="flex items-center justify-between mb-4">
