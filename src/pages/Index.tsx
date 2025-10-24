@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { toast } from '@/components/ui/use-toast';
 
@@ -11,8 +12,48 @@ const Index = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [password, setPassword] = useState('');
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const AUTHOR_PASSWORD = 'janfires2024';
+
+  useEffect(() => {
+    const savedAuth = localStorage.getItem('janfires_auth');
+    if (savedAuth === AUTHOR_PASSWORD) {
+      setIsAuthorized(true);
+    }
+  }, []);
+
+  const handleLogin = () => {
+    if (password === AUTHOR_PASSWORD) {
+      setIsAuthorized(true);
+      localStorage.setItem('janfires_auth', password);
+      setShowAuthDialog(false);
+      setPassword('');
+      toast({
+        title: "Успешно",
+        description: "Режим редактирования активирован",
+      });
+    } else {
+      toast({
+        title: "Ошибка",
+        description: "Неверный пароль",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthorized(false);
+    localStorage.removeItem('janfires_auth');
+    toast({
+      title: "Выход",
+      description: "Режим редактирования отключён",
+    });
+  };
 
   const [tracks, setTracks] = useState([
     { id: 1, title: 'Полночное эхо', duration: '3:45', album: 'Тени и свет', audioUrl: '' },
@@ -104,6 +145,11 @@ const Index = () => {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isAuthorized) {
+      setShowAuthDialog(true);
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -130,6 +176,14 @@ const Index = () => {
     });
   };
 
+  const handleUploadClick = () => {
+    if (!isAuthorized) {
+      setShowAuthDialog(true);
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
   const galleryImages = [
     'https://cdn.poehali.dev/projects/01cb8376-7f40-4136-8016-7df2bebb9299/files/8a8a8a4e-9ec5-4ee2-8293-eddff954176b.jpg',
     'https://cdn.poehali.dev/projects/01cb8376-7f40-4136-8016-7df2bebb9299/files/ec131a48-e89d-4261-9d05-0c0254c91315.jpg',
@@ -148,7 +202,7 @@ const Index = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold tracking-wider text-primary">Jan Fires</h1>
-            <div className="flex gap-8">
+            <div className="flex items-center gap-8">
               {['home', 'bio', 'music', 'gallery'].map((section) => (
                 <button
                   key={section}
@@ -160,10 +214,46 @@ const Index = () => {
                   {section === 'home' ? 'Главная' : section === 'bio' ? 'Биография' : section === 'music' ? 'Музыка' : 'Галерея'}
                 </button>
               ))}
+              <Button
+                variant={isAuthorized ? "default" : "outline"}
+                size="sm"
+                onClick={isAuthorized ? handleLogout : () => setShowAuthDialog(true)}
+                className={isAuthorized ? "bg-primary text-primary-foreground" : "border-primary text-primary"}
+              >
+                <Icon name={isAuthorized ? "LogOut" : "Lock"} className="mr-2" size={16} />
+                {isAuthorized ? 'Выйти' : 'Вход'}
+              </Button>
             </div>
           </div>
         </div>
       </nav>
+
+      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-primary">Вход для автора</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Введите пароль для редактирования контента сайта
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="password"
+              placeholder="Пароль"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              className="bg-background border-border"
+            />
+            <Button 
+              onClick={handleLogin}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Войти
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <section id="home" className="min-h-screen flex items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/50 to-background z-10"></div>
@@ -262,15 +352,17 @@ const Index = () => {
                     <h3 className="font-semibold text-lg text-foreground">{tracks[currentTrack].title}</h3>
                     <p className="text-sm text-muted-foreground">{tracks[currentTrack].album}</p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-primary text-primary hover:bg-primary/10"
-                  >
-                    <Icon name="Upload" className="mr-2" size={16} />
-                    Загрузить аудио
-                  </Button>
+                  {isAuthorized && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUploadClick}
+                      className="border-primary text-primary hover:bg-primary/10"
+                    >
+                      <Icon name="Upload" className="mr-2" size={16} />
+                      Загрузить аудио
+                    </Button>
+                  )}
                   <input
                     ref={fileInputRef}
                     type="file"
