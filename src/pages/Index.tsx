@@ -23,8 +23,13 @@ const Index = () => {
     'С множеством альбомов и бесчисленными выступлениями, Jan Fires продолжает раздвигать границы современной музыки, создавая звуковые пейзажи, которые резонируют с человеческим опытом. Его работа — свидетельство силы уязвимости и художественного самовыражения.'
   ]);
   const [tempBioText, setTempBioText] = useState<string[]>([]);
+  const [isEditingTrack, setIsEditingTrack] = useState(false);
+  const [editingTrackIndex, setEditingTrackIndex] = useState<number | null>(null);
+  const [yandexMusicUrl, setYandexMusicUrl] = useState('');
+  const [showYandexDialog, setShowYandexDialog] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const AUTHOR_PASSWORD = 'janfires2024';
 
@@ -90,6 +95,80 @@ const Index = () => {
     const updated = [...tempBioText];
     updated[index] = value;
     setTempBioText(updated);
+  };
+
+  const handleEditTrack = (index: number) => {
+    if (!isAuthorized) {
+      setShowAuthDialog(true);
+      return;
+    }
+    setEditingTrackIndex(index);
+    setIsEditingTrack(true);
+  };
+
+  const handleSaveTrack = (index: number, field: string, value: string) => {
+    const updatedTracks = [...tracks];
+    updatedTracks[index] = { ...updatedTracks[index], [field]: value };
+    setTracks(updatedTracks);
+    toast({
+      title: "Успешно",
+      description: "Информация о треке обновлена",
+    });
+  };
+
+  const handleYandexMusicLoad = () => {
+    if (!isAuthorized) {
+      setShowAuthDialog(true);
+      return;
+    }
+    setShowYandexDialog(true);
+  };
+
+  const loadFromYandexMusic = () => {
+    if (!yandexMusicUrl.trim()) {
+      toast({
+        title: "Ошибка",
+        description: "Введите ссылку на трек",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "В разработке",
+      description: "Функция загрузки с Яндекс Музыки будет доступна в следующей версии",
+    });
+    setShowYandexDialog(false);
+    setYandexMusicUrl('');
+  };
+
+  const handleGalleryImageUpload = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    if (!isAuthorized) {
+      setShowAuthDialog(true);
+      return;
+    }
+
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Ошибка",
+        description: "Пожалуйста, выберите изображение",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+    const updatedImages = [...galleryImages];
+    updatedImages[index] = imageUrl;
+    setGalleryImages(updatedImages);
+
+    toast({
+      title: "Успешно",
+      description: "Фотография обновлена",
+    });
   };
 
   const [tracks, setTracks] = useState([
@@ -231,11 +310,11 @@ const Index = () => {
     fileInputRef.current?.click();
   };
 
-  const galleryImages = [
+  const [galleryImages, setGalleryImages] = useState([
     'https://cdn.poehali.dev/projects/01cb8376-7f40-4136-8016-7df2bebb9299/files/8a8a8a4e-9ec5-4ee2-8293-eddff954176b.jpg',
     'https://cdn.poehali.dev/projects/01cb8376-7f40-4136-8016-7df2bebb9299/files/ec131a48-e89d-4261-9d05-0c0254c91315.jpg',
     'https://cdn.poehali.dev/projects/01cb8376-7f40-4136-8016-7df2bebb9299/files/50a49fc6-c8e0-441d-839b-54abf1421eb5.jpg',
-  ];
+  ]);
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
@@ -297,6 +376,34 @@ const Index = () => {
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
             >
               Войти
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showYandexDialog} onOpenChange={setShowYandexDialog}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-primary">Загрузить с Яндекс.Музыки</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Вставьте ссылку на трек из Яндекс.Музыки
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              type="text"
+              placeholder="https://music.yandex.ru/album/..."
+              value={yandexMusicUrl}
+              onChange={(e) => setYandexMusicUrl(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && loadFromYandexMusic()}
+              className="bg-background border-border"
+            />
+            <Button 
+              onClick={loadFromYandexMusic}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              <Icon name="Download" className="mr-2" size={16} />
+              Загрузить
             </Button>
           </div>
         </DialogContent>
@@ -422,12 +529,51 @@ const Index = () => {
                           <div className="w-2 h-2 rounded-full bg-primary" title="Аудио загружено"></div>
                         )}
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-foreground">{track.title}</h3>
-                        <p className="text-sm text-muted-foreground">{track.album}</p>
+                      <div className="flex-1">
+                        {isEditingTrack && editingTrackIndex === index ? (
+                          <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                            <Input
+                              value={track.title}
+                              onChange={(e) => handleSaveTrack(index, 'title', e.target.value)}
+                              className="bg-background border-border text-foreground"
+                              placeholder="Название трека"
+                            />
+                            <Input
+                              value={track.album}
+                              onChange={(e) => handleSaveTrack(index, 'album', e.target.value)}
+                              className="bg-background border-border text-foreground text-sm"
+                              placeholder="Альбом"
+                            />
+                          </div>
+                        ) : (
+                          <>
+                            <h3 className="font-semibold text-foreground">{track.title}</h3>
+                            <p className="text-sm text-muted-foreground">{track.album}</p>
+                          </>
+                        )}
                       </div>
                     </div>
-                    <span className="text-sm text-muted-foreground">{track.duration}</span>
+                    <div className="flex items-center gap-2">
+                      {isAuthorized && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isEditingTrack && editingTrackIndex === index) {
+                              setIsEditingTrack(false);
+                              setEditingTrackIndex(null);
+                            } else {
+                              handleEditTrack(index);
+                            }
+                          }}
+                          className="hover:text-primary"
+                        >
+                          <Icon name={isEditingTrack && editingTrackIndex === index ? "Check" : "Edit"} size={16} />
+                        </Button>
+                      )}
+                      <span className="text-sm text-muted-foreground">{track.duration}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -439,15 +585,26 @@ const Index = () => {
                     <p className="text-sm text-muted-foreground">{tracks[currentTrack].album}</p>
                   </div>
                   {isAuthorized && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleUploadClick}
-                      className="border-primary text-primary hover:bg-primary/10"
-                    >
-                      <Icon name="Upload" className="mr-2" size={16} />
-                      Загрузить аудио
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleYandexMusicLoad}
+                        className="border-primary text-primary hover:bg-primary/10"
+                      >
+                        <Icon name="Music2" className="mr-2" size={16} />
+                        Яндекс.Музыка
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUploadClick}
+                        className="border-primary text-primary hover:bg-primary/10"
+                      >
+                        <Icon name="Upload" className="mr-2" size={16} />
+                        Загрузить аудио
+                      </Button>
+                    </div>
                   )}
                   <input
                     ref={fileInputRef}
@@ -517,13 +674,32 @@ const Index = () => {
             {galleryImages.map((image, index) => (
               <div
                 key={index}
-                className="aspect-square overflow-hidden rounded-lg group cursor-pointer"
+                className="aspect-square overflow-hidden rounded-lg group cursor-pointer relative"
               >
                 <img
                   src={image}
                   alt={`Gallery ${index + 1}`}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
+                {isAuthorized && (
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e) => handleGalleryImageUpload(e as any, index);
+                        input.click();
+                      }}
+                      className="bg-background/90 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    >
+                      <Icon name="Upload" className="mr-2" size={16} />
+                      Изменить фото
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
