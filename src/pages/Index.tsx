@@ -1,18 +1,134 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
+import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('home');
   const [currentTrack, setCurrentTrack] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const tracks = [
-    { id: 1, title: 'Полночное эхо', duration: '3:45', album: 'Тени и свет' },
-    { id: 2, title: 'Золотой час', duration: '4:12', album: 'Тени и свет' },
-    { id: 3, title: 'Потерянный в переводе', duration: '3:28', album: 'Отголоски' },
-    { id: 4, title: 'Бархатные мечты', duration: '5:01', album: 'Отголоски' },
-  ];
+  const [tracks, setTracks] = useState([
+    { id: 1, title: 'Полночное эхо', duration: '3:45', album: 'Тени и свет', audioUrl: '' },
+    { id: 2, title: 'Золотой час', duration: '4:12', album: 'Тени и свет', audioUrl: '' },
+    { id: 3, title: 'Потерянный в переводе', duration: '3:28', album: 'Отголоски', audioUrl: '' },
+    { id: 4, title: 'Бархатные мечты', duration: '5:01', album: 'Отголоски', audioUrl: '' },
+  ]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateTime = () => setCurrentTime(audio.currentTime);
+    const updateDuration = () => setDuration(audio.duration);
+    const handleEnded = () => {
+      setIsPlaying(false);
+      if (currentTrack < tracks.length - 1) {
+        setCurrentTrack(currentTrack + 1);
+      }
+    };
+
+    audio.addEventListener('timeupdate', updateTime);
+    audio.addEventListener('loadedmetadata', updateDuration);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', updateTime);
+      audio.removeEventListener('loadedmetadata', updateDuration);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [currentTrack, tracks.length]);
+
+  useEffect(() => {
+    if (audioRef.current && tracks[currentTrack]?.audioUrl) {
+      audioRef.current.load();
+      if (isPlaying) {
+        audioRef.current.play();
+      }
+    }
+  }, [currentTrack]);
+
+  const togglePlayPause = () => {
+    if (!audioRef.current) return;
+    if (!tracks[currentTrack]?.audioUrl) {
+      toast({
+        title: "Нет аудио",
+        description: "Загрузите аудиофайл для этого трека",
+      });
+      return;
+    }
+
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleTrackSelect = (index: number) => {
+    setCurrentTrack(index);
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const skipTrack = (direction: 'next' | 'prev') => {
+    if (direction === 'next' && currentTrack < tracks.length - 1) {
+      setCurrentTrack(currentTrack + 1);
+    } else if (direction === 'prev' && currentTrack > 0) {
+      setCurrentTrack(currentTrack - 1);
+    }
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    setCurrentTime(time);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+    }
+  };
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return '0:00';
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('audio/')) {
+      toast({
+        title: "Ошибка",
+        description: "Пожалуйста, выберите аудиофайл",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const audioUrl = URL.createObjectURL(file);
+    const updatedTracks = [...tracks];
+    updatedTracks[currentTrack] = {
+      ...updatedTracks[currentTrack],
+      audioUrl,
+    };
+    setTracks(updatedTracks);
+
+    toast({
+      title: "Успешно",
+      description: `Трек "${tracks[currentTrack].title}" загружен`,
+    });
+  };
 
   const galleryImages = [
     'https://cdn.poehali.dev/projects/01cb8376-7f40-4136-8016-7df2bebb9299/files/8a8a8a4e-9ec5-4ee2-8293-eddff954176b.jpg',
@@ -110,7 +226,7 @@ const Index = () => {
                 {tracks.map((track, index) => (
                   <div
                     key={track.id}
-                    onClick={() => setCurrentTrack(index)}
+                    onClick={() => handleTrackSelect(index)}
                     className={`flex items-center justify-between p-4 rounded-lg cursor-pointer transition-all ${
                       currentTrack === index
                         ? 'bg-primary/20 border border-primary'
@@ -118,13 +234,18 @@ const Index = () => {
                     }`}
                   >
                     <div className="flex items-center gap-4">
-                      <Button
-                        size="icon"
-                        variant={currentTrack === index ? 'default' : 'ghost'}
-                        className={currentTrack === index ? 'bg-primary text-primary-foreground' : ''}
-                      >
-                        <Icon name={currentTrack === index ? 'Pause' : 'Play'} size={18} />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="icon"
+                          variant={currentTrack === index && isPlaying ? 'default' : 'ghost'}
+                          className={currentTrack === index && isPlaying ? 'bg-primary text-primary-foreground' : ''}
+                        >
+                          <Icon name={currentTrack === index && isPlaying ? 'Pause' : 'Play'} size={18} />
+                        </Button>
+                        {track.audioUrl && (
+                          <div className="w-2 h-2 rounded-full bg-primary" title="Аудио загружено"></div>
+                        )}
+                      </div>
                       <div>
                         <h3 className="font-semibold text-foreground">{track.title}</h3>
                         <p className="text-sm text-muted-foreground">{track.album}</p>
@@ -137,25 +258,71 @@ const Index = () => {
 
               <div className="border-t border-border pt-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-semibold text-lg text-foreground">{tracks[currentTrack].title}</h3>
                     <p className="text-sm text-muted-foreground">{tracks[currentTrack].album}</p>
                   </div>
-                  <span className="text-sm text-muted-foreground">{tracks[currentTrack].duration}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-primary text-primary hover:bg-primary/10"
+                  >
+                    <Icon name="Upload" className="mr-2" size={16} />
+                    Загрузить аудио
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
                 </div>
 
-                <div className="w-full bg-muted rounded-full h-2 mb-4">
-                  <div className="bg-primary h-2 rounded-full w-1/3"></div>
+                <audio ref={audioRef} className="hidden">
+                  {tracks[currentTrack]?.audioUrl && (
+                    <source src={tracks[currentTrack].audioUrl} type="audio/mpeg" />
+                  )}
+                </audio>
+
+                <div className="mb-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration || 0}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-center gap-6">
-                  <Button variant="ghost" size="icon">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => skipTrack('prev')}
+                    disabled={currentTrack === 0}
+                  >
                     <Icon name="SkipBack" size={24} />
                   </Button>
-                  <Button size="icon" className="w-14 h-14 bg-primary text-primary-foreground hover:bg-primary/90">
-                    <Icon name="Play" size={28} />
+                  <Button 
+                    size="icon" 
+                    onClick={togglePlayPause}
+                    className="w-14 h-14 bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Icon name={isPlaying ? 'Pause' : 'Play'} size={28} />
                   </Button>
-                  <Button variant="ghost" size="icon">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => skipTrack('next')}
+                    disabled={currentTrack === tracks.length - 1}
+                  >
                     <Icon name="SkipForward" size={24} />
                   </Button>
                 </div>
